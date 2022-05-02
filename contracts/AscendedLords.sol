@@ -36,7 +36,6 @@ contract AscendedLords is AccessControl, ERC721Enumerable {
     uint256 private constant BURNED_LORDS_PROB = 3; // 3% probability
     uint256 private _nonce;
     string private _baseTokenURI;
-    string private constant DEFAULT_LORE = "An epic collection of 1222 Ascended Lords reborn from their ashes, stored on the Fantom Blockchain.";
     bool private _ascensionStarted = false;
 
     mapping(uint256 => string) private _lordNames;
@@ -118,7 +117,6 @@ contract AscendedLords is AccessControl, ERC721Enumerable {
         uint256 _classTokenId = _classTokenIdCounters[artifactType].current();
 
         _tokenIdToClassTokenId[_tokenId] = _classTokenId;
-        _lordLores[_tokenId] = DEFAULT_LORE;
         _lordClasses[_tokenId] = _lordClassName(artifactType);
         _lordClassIds[_tokenId] = artifactType;
 
@@ -146,7 +144,6 @@ contract AscendedLords is AccessControl, ERC721Enumerable {
             uint256 _classTokenId = _classTokenIdCounters[lordClass].current();
 
             _tokenIdToClassTokenId[_tokenId] = _classTokenId;
-            _lordLores[_tokenId] = DEFAULT_LORE;
             _lordClasses[_tokenId] = _lordClassName(lordClass);
             _lordClassIds[_tokenId] = lordClass;
 
@@ -176,7 +173,6 @@ contract AscendedLords is AccessControl, ERC721Enumerable {
             uint256 _classTokenId = _classTokenIdCounters[lordClass].current();
 
             _tokenIdToClassTokenId[_tokenId] = _classTokenId;
-            _lordLores[_tokenId] = DEFAULT_LORE;
             _lordClasses[_tokenId] = _lordClassName(lordClass);
             _lordClassIds[_tokenId] = lordClass;
 
