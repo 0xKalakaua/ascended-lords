@@ -31,9 +31,9 @@ contract MockERC721 is AccessControlEnumerable, ERC721Enumerable, ERC721URIStora
         _setTokenURI(tokenId, _tokenURI);
     }
 
-    function mint(string memory _tokenURI) public onlyAdmin {
+    function mint(address _to, string memory _tokenURI) public onlyAdmin {
         require(_tokenIdTracker.current() <= max_supply, "MockERC721: all tokens have been minted");
-        _safeMint(msg.sender, _tokenIdTracker.current());
+        _safeMint(_to, _tokenIdTracker.current());
         _setTokenURI(_tokenIdTracker.current(), _tokenURI);
         _tokenIdTracker.increment();
     }

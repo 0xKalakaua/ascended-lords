@@ -15,6 +15,11 @@ def print_lord_dist(asclords):
     tokens = [{}, {}, {}]
     class2id = {}
 
+    # initialize tokens
+    for key in CLASSES:
+        for i in range(3):
+            tokens[i][key] = 0
+
     for i in range(3):
         if "Chosen One" not in tokens[i]:
             tokens[i]["Chosen One"] = 0
@@ -25,10 +30,7 @@ def print_lord_dist(asclords):
             lord_class = asclords.lordClass(token_id)
             lord_class_id = asclords.lordClassId(token_id)
             class2id[lord_class] = lord_class_id
-            try:
-                tokens[i][lord_class] += 1
-            except KeyError:
-                tokens[i][lord_class] = 1
+            tokens[i][lord_class] += 1
 
     for key in CLASSES:
         print(f"""{key}: {tokens[0][key]} + {tokens[1][key]} + {tokens[2][key]} \
@@ -68,13 +70,12 @@ def ftl():
     max_supply = 120
     ftl = MockERC721.deploy("FTL Test", "FTL", max_supply, dev, {'from': dev})
     for i in range(1, max_supply + 1):
-        ftl.mint(f"FTL #{i}", {'from': dev})
-        if i > 40:
-            if i <= 80:
-                ftl.safeTransferFrom(dev, accounts[1], i, {'from': dev})
-            else:
-                ftl.safeTransferFrom(dev, accounts[2], i, {'from': dev})
-
+        if i <= 40:
+            ftl.mint(dev, f"FTL #{i}", {'from': dev})
+        elif i <= 80:
+            ftl.mint(accounts[1], f"FTL #{i}", {'from': dev})
+        else:
+            ftl.mint(accounts[2], f"FTL #{i}", {'from': dev})
 
     return ftl
 
@@ -104,16 +105,18 @@ def artifacts():
                                 {'from': dev})
 
     artifacts.startMint({'from': dev})
+
+    for i in range(3):
+        xrlc.mint(accounts[i], "100000000 ether", {'from': dev})
+        xrlc.approve(artifacts, "10000000000 ether", {'from': accounts[i]})
+
     for i in range(12):
-        acc_nb = i % 3
         if i >= 8:
             acc_nb = 2
         elif i >= 4:
             acc_nb = 1
         else:
             acc_nb = 0
-        xrlc.mint(accounts[acc_nb], "100000000 ether", {'from': dev})
-        xrlc.approve(artifacts, "100000000 ether", {'from': accounts[acc_nb]})
         artifacts.collectArtifacts(10, {'from': accounts[acc_nb]})
 
     return artifacts
@@ -124,7 +127,7 @@ def contracts(ftl, artifacts):
     name = "Ascended Lords"
     symbol = "ASCLORD"
     base_uri = "my_uri/"
-    max_supply = 120 
+    max_supply = 120
     admin = accounts[1]
     asclords = AscendedLords.deploy(
                                     name,
@@ -211,22 +214,36 @@ def test_ascend_lord(contracts):
     print_artifact_dist(artifacts)
 
     # normal mint
+    first_unique = True
+    first_burned = True
     for i in range(1, 121):
+        if asclords.totalSupplyPerClass(8) == 30 and first_unique:
+            first_unique = False
+            print(f"***Total unique lord supply reached at {i} mint")
+            # test unique lord max supply reached (team unique lord mint)
+            with brownie.reverts("all unique lords have been minted"):
+                asclords.teamUniqueLordMint(1, {'from': accounts[0]})
+        if asclords.totalSupplyPerClass(9) == 10 and first_burned:
+            first_burned = False
+            print(f"***Total burned lord supply reached at {i} mint")
+
         if i == 120:
             # test team lord mint trying to mint more than what is left
             with brownie.reverts("not enough tokens left to mint"):
                 asclords.teamUniqueLordMint(2, {'from': accounts[0]})
                 asclords.teamCommonLordMint(2, 4, {'from': accounts[0]})
 
-        if i > 40:
-            if i <= 80:
-                asclords.ascendLord(i, i, {'from': accounts[1]})
-                assert asclords.lordName(i) == ""
-            else:
-                asclords.ascendLord(i, i, {'from': accounts[2]})
-                assert asclords.lordLore(i) == ""
-        else:
+        if i <= 40:
             asclords.ascendLord(i, i, {'from': accounts[0]})
+        elif i <= 80:
+            asclords.ascendLord(i, i, {'from': accounts[1]})
+            assert asclords.lordName(i) == ""
+        else:
+            asclords.ascendLord(i, i, {'from': accounts[2]})
+            assert asclords.lordLore(i) == ""
+
+    assert asclords.totalSupplyPerClass(8) == 22
+    assert asclords.totalSupplyPerClass(9) == 10
 
     # test "all tokens have been minted"
     with brownie.reverts("all tokens have been minted"):
@@ -308,25 +325,55 @@ def test_team_common_lord_mint(contracts):
     assert asclords.totalSupplyPerClass(0) == 8
     assert asclords.totalSupply() == 50
 
-def test_change_lore(contracts):
+def test_all_lords_of_class_minted(contracts):
+    ftl, artifacts, asclords = contracts
+
+    asclords.teamCommonLordMint(29, 1, {'from': accounts[1]})
+
+    asclords.startAscension({'from': accounts[1]})
+    artifacts.setApprovalForAll(asclords, True, {'from': accounts[0]})
+    ftl.setApprovalForAll(asclords, True, {'from': accounts[0]})
+
+    # test common lord mint - all lords of that class minted
+    with brownie.reverts("all lords of that class have been ascended"):
+        asclords.teamCommonLordMint(2, 1, {'from': accounts[1]})
+    asclords.teamCommonLordMint(1, 1, {'from': accounts[1]})
+    with brownie.reverts("all lords of that class have been ascended"):
+        asclords.teamCommonLordMint(1, 1, {'from': accounts[1]})
+        asclords.teamCommonLordMint(2, 1, {'from': accounts[1]})
+
+    # test ascendLord - all lords of that class minted
+    for i in range(100):
+        if artifacts.artifactType(i) == 1 and artifacts.ownerOf(i) == accounts[0].address:
+            with brownie.reverts("all lords of that class have been ascended"):
+                asclords.ascendLord(1, i, {'from': accounts[0]})
+            break
+
+def test_change_lore_and_name(contracts):
     ftl, artifacts, asclords = contracts
 
     # not lore setter role
     with brownie.reverts(f"""AccessControl: account \
 {accounts[2].address.lower()} is missing role {LORE_SETTER_ROLE}"""):
         asclords.changeLore(1, "new lore", {'from': accounts[2]})
+        asclords.changeName(1, "new name", {'from': accounts[2]})
 
     # nonexistent token
     with brownie.reverts("token does not exist"):
         asclords.changeLore(1, "new lore", {'from': accounts[0]})
+        asclords.changeName(1, "new lore", {'from': accounts[0]})
 
     asclords.teamUniqueLordMint(2, {'from': accounts[1]})
 
     # succesful lore change
     asclords.changeLore(1, "new lore", {'from': accounts[0]})
+    asclords.changeName(1, "new name", {'from': accounts[0]})
     assert asclords.lordLore(1) == "new lore"
+    assert asclords.lordName(1) == "new name"
 
     # non admin lore change
     asclords.grantRole(LORE_SETTER_ROLE, accounts[2], {'from': accounts[1]})
     asclords.changeLore(2, "another lore", {'from': accounts[2]})
+    asclords.changeName(2, "another name", {'from': accounts[2]})
     assert asclords.lordLore(2) == "another lore"
+    assert asclords.lordName(2) == "another name"

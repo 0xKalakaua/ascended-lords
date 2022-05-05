@@ -30,10 +30,21 @@ contract AscendedLords is AccessControl, ERC721Enumerable {
     Counters.Counter private teamCommonLordCounter;
     uint256 private constant TEAM_COMMON_LORD_ALLOCATION = 50;
     uint256 private constant TEAM_UNIQUE_LORD_ALLOCATION = 8;
-    uint256 private constant MAX_UNIQUE_LORDS = 30;
+
+    // PROD VALUES
+    //uint256 private constant MAX_LORDS_PER_CLASS = 300
+    //uint256 private constant MAX_UNIQUE_LORDS = 30;
+    //uint256 private constant MAX_BURNED_LORDS = 10;
+    //uint256 private constant UNIQUE_LORDS_PROB = 30; // 3% probability
+    //uint256 private constant BURNED_LORDS_PROB = 17; // 1.7% probability
+
+    // TEST VALUES
+    uint256 private constant MAX_LORDS_PER_CLASS = 30;
+    uint256 private constant MAX_UNIQUE_LORDS = 22;
     uint256 private constant MAX_BURNED_LORDS = 10;
-    uint256 private constant UNIQUE_LORDS_PROB = 4; // 4% probability
-    uint256 private constant BURNED_LORDS_PROB = 3; // 3% probability
+    uint256 private constant UNIQUE_LORDS_PROB = 300; // 30% probability
+    uint256 private constant BURNED_LORDS_PROB = 170; // 17% probability
+
     uint256 private _nonce;
     string private _baseTokenURI;
     bool private _ascensionStarted = false;
@@ -97,15 +108,17 @@ contract AscendedLords is AccessControl, ERC721Enumerable {
         return _tokenIdToClassTokenId[tokenId];
     }
 
-    function totalSupplyPerClass(uint256 lordClassId) external view returns (uint256) {
-        return _classTokenIdCounters[lordClassId].current();
-    }
 
     function ascendLord(uint256 ftlTokenId, uint256 artifactTokenId) external {
+        uint256 artifactType = artifacts.artifactType(artifactTokenId);
+
         require(_ascensionStarted, "ascension has not started yet");
         require(_tokenIdCounter.current() < MAX_SUPPLY, "all tokens have been minted");
+        require(
+            totalSupplyPerClass(artifactType) < MAX_LORDS_PER_CLASS,
+            "all lords of that class have been ascended"
+        );
 
-        uint256 artifactType = artifacts.artifactType(artifactTokenId);
         artifactType = _uniqueOrBurnedLord(artifactType);
 
         artifacts.safeTransferFrom(msg.sender, BURN_ADDRESS, artifactTokenId);
@@ -133,6 +146,7 @@ contract AscendedLords is AccessControl, ERC721Enumerable {
             _tokenIdCounter.current() + amount < MAX_SUPPLY + 1,
             "not enough tokens left to mint"
         );
+        require(totalSupplyPerClass(8) < MAX_UNIQUE_LORDS, "all unique lords have been minted");
 
         uint256 lordClass = 8;
         for (uint256 i = 0; i < amount; ++i) {
@@ -162,6 +176,10 @@ contract AscendedLords is AccessControl, ERC721Enumerable {
         require(
             _tokenIdCounter.current() + amount < MAX_SUPPLY + 1,
             "not enough tokens left to mint"
+        );
+        require(
+            totalSupplyPerClass(lordClass) + amount < MAX_LORDS_PER_CLASS + 1,
+            "all lords of that class have been ascended"
         );
 
         for (uint256 i = 0; i < amount; ++i) {
@@ -197,25 +215,27 @@ contract AscendedLords is AccessControl, ERC721Enumerable {
         _lordNames[tokenId] = newName;
     }
 
+    function totalSupplyPerClass(uint256 lordClassId) public view returns (uint256) {
+        return _classTokenIdCounters[lordClassId].current();
+    }
+
 
     function _baseURI() internal view override returns (string memory) {
         return _baseTokenURI;
     }
 
     function _uniqueOrBurnedLord(uint256 artifactType) private returns (uint256) {
-        uint256 newArtifactType;
         uint256 randomNb = 
-            uint256(keccak256(abi.encodePacked(++_nonce, block.timestamp, msg.sender, blockhash(block.number - 1)))) % 100;
+            uint256(keccak256(abi.encodePacked(++_nonce, block.timestamp, msg.sender, blockhash(block.number - 1)))) % 1000;
 
         if (randomNb < (UNIQUE_LORDS_PROB + BURNED_LORDS_PROB)) {
-            if (_classTokenIdCounters[8].current() <= MAX_UNIQUE_LORDS) {
-                newArtifactType = 8;
+            if (totalSupplyPerClass(8) < MAX_UNIQUE_LORDS) {
+                artifactType = 8;
             }
             if (randomNb < BURNED_LORDS_PROB &&
-                _classTokenIdCounters[9].current() <= MAX_BURNED_LORDS) {
-                newArtifactType = 9;
+                totalSupplyPerClass(9) < MAX_BURNED_LORDS) {
+                artifactType = 9;
             }
-            return newArtifactType;
         }
         return artifactType;
     }
