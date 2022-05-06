@@ -6,13 +6,13 @@ def main():
     work = accounts.load("work")
     print(network.show_active())
     publish_source = True # Not supported on Testnet
-    name = "Ascended Lords Test"
+    name = "Ascended Lords"
     symbol = "XFTL"
     base_uri = "https://fantomlordsapi.herokuapp.com/lords/"
-    ftl = "0xAD66F519cA16aA2966dD581FF10155DE723b437F"
-    artifacts = "0xd2F3A2d99EB2eE8D444d79442f7bc640A2656d34"
-    max_supply = 122
-    admin = "0x476e62b30E2587Ea937C19e2b60781e334fa29d7"
+    ftl = "0xfee8077c909d956E9036c2d2999723931CeFE548"
+    artifacts = "0xC021315E4aF3C6cbD2C96E5F7C67d0A4c2F8FE11"
+    max_supply = 1222
+    admin = "0x4a03721C829Ae3d448bF37Cac21527cbE75fc4Cb"
     AscendedLords.deploy(
                     name,
                     symbol,

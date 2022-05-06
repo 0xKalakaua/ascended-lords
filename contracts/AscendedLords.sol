@@ -30,7 +30,7 @@ contract AscendedLords is AccessControl, ERC721Enumerable {
     Counters.Counter private teamCommonLordCounter;
     uint256 private constant TEAM_COMMON_LORD_ALLOCATION = 50;
     uint256 private constant TEAM_UNIQUE_LORD_ALLOCATION = 8;
-    uint256 private constant MAX_LORDS_PER_CLASS = 300
+    uint256 private constant MAX_LORDS_PER_CLASS = 300;
     uint256 private constant MAX_UNIQUE_LORDS = 30;
     uint256 private constant MAX_BURNED_LORDS = 10;
     uint256 private constant UNIQUE_LORDS_PROB = 30; // 3% probability
