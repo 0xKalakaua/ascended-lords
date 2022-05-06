@@ -30,21 +30,11 @@ contract AscendedLords is AccessControl, ERC721Enumerable {
     Counters.Counter private teamCommonLordCounter;
     uint256 private constant TEAM_COMMON_LORD_ALLOCATION = 50;
     uint256 private constant TEAM_UNIQUE_LORD_ALLOCATION = 8;
-
-    // PROD VALUES
-    //uint256 private constant MAX_LORDS_PER_CLASS = 300
-    //uint256 private constant MAX_UNIQUE_LORDS = 30;
-    //uint256 private constant MAX_BURNED_LORDS = 10;
-    //uint256 private constant UNIQUE_LORDS_PROB = 30; // 3% probability
-    //uint256 private constant BURNED_LORDS_PROB = 17; // 1.7% probability
-
-    // TEST VALUES
-    uint256 private constant MAX_LORDS_PER_CLASS = 30;
-    uint256 private constant MAX_UNIQUE_LORDS = 22;
+    uint256 private constant MAX_LORDS_PER_CLASS = 300
+    uint256 private constant MAX_UNIQUE_LORDS = 30;
     uint256 private constant MAX_BURNED_LORDS = 10;
-    uint256 private constant UNIQUE_LORDS_PROB = 300; // 30% probability
-    uint256 private constant BURNED_LORDS_PROB = 170; // 17% probability
-
+    uint256 private constant UNIQUE_LORDS_PROB = 30; // 3% probability
+    uint256 private constant BURNED_LORDS_PROB = 17; // 1.7% probability
     uint256 private _nonce;
     string private _baseTokenURI;
     bool private _ascensionStarted = false;
